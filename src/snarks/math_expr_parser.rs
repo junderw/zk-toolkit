@@ -95,43 +95,6 @@ impl MathExprParser {
         }
     }
 
-    // <expr> ::= <term1> [ ('+'|'-') <term1> ]*
-    fn expr(&self) -> impl Fn(&str) -> IResult<&str, MathExpr> + '_ {
-        |input| {
-            let rhs = tuple((alt((char('+'), char('-'))), self.term1()));
-            let (input, (lhs, rhs)) = tuple((self.term1(), many0(rhs)))(input)?;
-
-            if rhs.len() == 0 {
-                Ok((input, lhs))
-            } else {
-                // translate rhs vector to Add<Add<..,Add>>>..
-                let rhs_head = &rhs[0];
-                let rhs = rhs
-                    .iter()
-                    .skip(1)
-                    .fold(rhs_head.1.clone(), |acc, x| match x {
-                        ('+', node) => {
-                            self.incr_int();
-                            MathExpr::Add(self.1, Box::new(acc), Box::new(node.clone()))
-                        }
-                        ('-', node) => {
-                            self.incr_int();
-                            MathExpr::Sub(self.1, Box::new(acc), Box::new(node.clone()))
-                        }
-                        (op, _) => panic!("unexpected operator encountered in expr: {}", op),
-                    });
-
-                self.incr_int();
-                let node = if rhs_head.0 == '+' {
-                    MathExpr::Add(self.1, Box::new(lhs), Box::new(rhs))
-                } else {
-                    MathExpr::Sub(self.1, Box::new(lhs), Box::new(rhs))
-                };
-                Ok((input, node))
-            }
-        }
-    }
-
     // <term2> ::= <variable> | <number> | '(' <expr> ')'
     fn term2(&self) -> impl Fn(&str) -> IResult<&str, MathExpr> + '_ {
         |input| {
@@ -187,14 +150,39 @@ impl MathExprParser {
     }
 
     // <expr> ::= <term1> [ ('+'|'-') <term1> ]*
-    // <term1> ::= <term2> [ ('*'|'/') <term2> ]*
-    // <term2> ::= <variable> | <number> | '(' <expr> ')'
-    pub fn parse(&mut self) -> impl FnMut(&str, Field) -> IResult<&str, MathExpr> + '_ {
-        |input, f| {
-            // reset parser
-            self.0 = f;
-            self.1 = 0;
-            self.expr()(input)
+    pub fn expr(&self) -> impl Fn(&str) -> IResult<&str, MathExpr> + '_ {
+        |input| {
+            let rhs = tuple((alt((char('+'), char('-'))), self.term1()));
+            let (input, (lhs, rhs)) = tuple((self.term1(), many0(rhs)))(input)?;
+
+            if rhs.len() == 0 {
+                Ok((input, lhs))
+            } else {
+                // translate rhs vector to Add<Add<..,Add>>>..
+                let rhs_head = &rhs[0];
+                let rhs = rhs
+                    .iter()
+                    .skip(1)
+                    .fold(rhs_head.1.clone(), |acc, x| match x {
+                        ('+', node) => {
+                            self.incr_int();
+                            MathExpr::Add(self.1, Box::new(acc), Box::new(node.clone()))
+                        }
+                        ('-', node) => {
+                            self.incr_int();
+                            MathExpr::Sub(self.1, Box::new(acc), Box::new(node.clone()))
+                        }
+                        (op, _) => panic!("unexpected operator encountered in expr: {}", op),
+                    });
+
+                self.incr_int();
+                let node = if rhs_head.0 == '+' {
+                    MathExpr::Add(self.1, Box::new(lhs), Box::new(rhs))
+                } else {
+                    MathExpr::Sub(self.1, Box::new(lhs), Box::new(rhs))
+                };
+                Ok((input, node))
+            }
         }
     }
 }
