@@ -23,188 +23,180 @@ pub enum MathExpr {
   Sub(SignalId, Box<MathExpr>, Box<MathExpr>),
 }
 
-// making static because nom parsers cannot refer to self
-static mut OPT_FIELD: Option<Field> = None;
-static mut SIGNAL_ID: u128 = 0;
-
-pub struct MathExprParser();
+pub struct MathExprParser(Field, u128);
 
 impl MathExprParser {
-  fn num_str_to_field_elem(s: &str) -> FieldElem {
-    unsafe {
-      let field: &Field = OPT_FIELD.as_ref().unwrap();
+    pub fn new(f: Field, s: u128) -> Self {
+        Self(f, s)
+    }
 
-      if s.starts_with("-") {
-        let mut n = BigInt::parse_bytes(s.as_bytes(), 10).unwrap();
-        if n.sign() == Sign::Minus {
-          let order = BigInt::from_biguint(Sign::Plus, (*field.order).clone());
-          n = -n;
-          n = n % &order;
-          n = &order - n;
-          let n = n.to_biguint().unwrap();
-          field.elem(&n)
-
-        } else {
-          let n = n.to_biguint().unwrap();
-          field.elem(&n)
+    #[inline]
+    fn incr_int(&self) {
+        let int = (&self.1) as *const u128 as *mut u128;
+        // Safety: Should use std::sync::Mutex, but performance!
+        // This is super unsafe
+        unsafe {
+            *int += 1;
         }
-      } else { // if positive
-        let n = BigUint::parse_bytes(s.as_bytes(), 10).unwrap();
-        field.elem(&n)
-      }
+        /*
+        // If self.1 was a Mutex<u128>
+        let lock = self.1.lock().unwrap();
+        *lock += 1;
+        */
     }
-  }
 
-  fn variable(input: &str) -> IResult<&str, MathExpr> {
-    let (input, s) =
-      delimited(
-        multispace0,
-        recognize(
-          terminated(alpha1, many0(one_of("0123456789")))
-        ),
-        multispace0
-      )(input)?;
-
-    unsafe {
-      SIGNAL_ID += 1;
-      Ok((input, MathExpr::Var(SIGNAL_ID, s.to_string())))
-    }
-  }
-
-  fn decimal(input: &str) -> IResult<&str, MathExpr> {
-    let (input, s) =
-      delimited(
-        multispace0,
-        recognize(
-          tuple((
-            opt(char('-')),
-            many1(
-              one_of("0123456789")
-            ),
-          )),
-        ),
-        multispace0
-      )(input)?;
-
-    let n = MathExprParser::num_str_to_field_elem(s);
-    unsafe {
-      SIGNAL_ID += 1;
-      Ok((input, MathExpr::Num(SIGNAL_ID, n)))
-    }
-  }
-
-  // <expr> ::= <term1> [ ('+'|'-') <term1> ]*
-  fn expr(input: &str) -> IResult<&str, MathExpr> {
-    let rhs = tuple((alt((char('+'), char('-'))), MathExprParser::term1));
-    let (input, (lhs, rhs)) = tuple((
-      MathExprParser::term1,
-      many0(rhs),
-    ))(input)?;
-
-    if rhs.len() == 0 {
-      Ok((input, lhs))
-    } else {
-      // translate rhs vector to Add<Add<..,Add>>>..
-      let rhs_head = &rhs[0];
-      let rhs = rhs.iter().skip(1).fold(rhs_head.1.clone(), |acc, x| {
-        match x {
-          ('+', node) => {
-            unsafe {
-              SIGNAL_ID += 1;
-              MathExpr::Add(SIGNAL_ID, Box::new(acc), Box::new(node.clone()))
+    fn num_str_to_field_elem(&self) -> impl Fn(&str) -> FieldElem + '_ {
+        |s| {
+            let field = &self.0;
+            if s.starts_with("-") {
+                let mut n = BigInt::parse_bytes(s.as_bytes(), 10).unwrap();
+                if n.sign() == Sign::Minus {
+                    let order = BigInt::from_biguint(Sign::Plus, (*field.order).clone());
+                    n = -n;
+                    n = n % &order;
+                    n = &order - n;
+                    let n = n.to_biguint().unwrap();
+                    field.elem(&n)
+                } else {
+                    let n = n.to_biguint().unwrap();
+                    field.elem(&n)
+                }
+            } else {
+                // if positive
+                let n = BigUint::parse_bytes(s.as_bytes(), 10).unwrap();
+                field.elem(&n)
             }
-          },
-          ('-', node) => {
-            unsafe {
-              SIGNAL_ID += 1;
-              MathExpr::Sub(SIGNAL_ID, Box::new(acc), Box::new(node.clone()))
-            }
-          },
-          (op, _) => panic!("unexpected operator encountered in expr: {}", op),
         }
-      });
-
-      unsafe {
-        SIGNAL_ID += 1;
-        let node = if rhs_head.0 == '+' {
-          MathExpr::Add(SIGNAL_ID, Box::new(lhs), Box::new(rhs))
-        } else {
-          MathExpr::Sub(SIGNAL_ID, Box::new(lhs), Box::new(rhs))
-        };
-        Ok((input, node))
-      }
     }
-  }
 
-  // <term2> ::= <variable> | <number> | '(' <expr> ')'
-  fn term2(input: &str) -> IResult<&str, MathExpr> {
-    let (input, node) = alt((
-      MathExprParser::variable,
-      MathExprParser::decimal,
-      delimited(
-        delimited(multispace0, char('('), multispace0),
-        MathExprParser::expr,
-        delimited(multispace0, char(')'), multispace0),
-      ),
-    ))(input)?;
-
-    Ok((input, node))
-  }
-
-  // <term1> ::= <term2> [ ('*'|'/') <term2> ]*
-  fn term1(input: &str) -> IResult<&str, MathExpr> {
-    let rhs = tuple((alt((char('*'), char('/'))), MathExprParser::term2));
-    let (input, (lhs, rhs)) = tuple((
-      MathExprParser::term2,
-      many0(rhs),
-    ))(input)?;
-
-    if rhs.len() == 0 {
-      Ok((input, lhs))
-    } else {
-      // translate rhs vector to Mul<Mul<..,Mul>>>..
-      let rhs_head = &rhs[0];
-      let rhs = rhs.iter().skip(1).fold(rhs_head.1.clone(), |acc, x| {
-        match x {
-          ('*', node) => {
-            unsafe {
-              SIGNAL_ID += 1;
-              MathExpr::Mul(SIGNAL_ID, Box::new(acc), Box::new(node.clone()))
-            }
-          },
-          ('/', node) => {
-            unsafe {
-              SIGNAL_ID += 1;
-              MathExpr::Div(SIGNAL_ID, Box::new(acc), Box::new(node.clone()))
-            }
-          },
-          (op, _) => panic!("unexpected operator encountered in term1 {}", op),
+    fn variable(&self) -> impl Fn(&str) -> IResult<&str, MathExpr> + '_ {
+        |input| {
+            let (input, s) = delimited(
+                multispace0,
+                recognize(terminated(alpha1, many0(one_of("0123456789")))),
+                multispace0,
+            )(input)?;
+            self.incr_int();
+            Ok((input, MathExpr::Var(self.1, s.to_string())))
         }
-      });
-
-      unsafe {
-        SIGNAL_ID += 1;
-        let node = if rhs_head.0 == '*' {
-          MathExpr::Mul(SIGNAL_ID, Box::new(lhs), Box::new(rhs))
-        } else {
-          MathExpr::Div(SIGNAL_ID, Box::new(lhs), Box::new(rhs))
-        };
-        Ok((input, node))
-      }
     }
-  }
 
-  // <expr> ::= <term1> [ ('+'|'-') <term1> ]*
-  // <term1> ::= <term2> [ ('*'|'/') <term2> ]*
-  // <term2> ::= <variable> | <number> | '(' <expr> ')'
-  pub fn parse(input: &str, f: Field) -> IResult<&str, MathExpr> {
-    // reset parser
-    unsafe {
-      OPT_FIELD = Some(f);
-      SIGNAL_ID = 0;
+    fn decimal(&self) -> impl Fn(&str) -> IResult<&str, MathExpr> + '_ {
+        |input| {
+            let (input, s) = delimited(
+                multispace0,
+                recognize(tuple((opt(char('-')), many1(one_of("0123456789"))))),
+                multispace0,
+            )(input)?;
+
+            let n = self.num_str_to_field_elem()(s);
+            self.incr_int();
+            Ok((input, MathExpr::Num(self.1, n)))
+        }
     }
-    MathExprParser::expr(input)
-  }
+
+    // <expr> ::= <term1> [ ('+'|'-') <term1> ]*
+    fn expr(&self) -> impl Fn(&str) -> IResult<&str, MathExpr> + '_ {
+        |input| {
+            let rhs = tuple((alt((char('+'), char('-'))), self.term1()));
+            let (input, (lhs, rhs)) = tuple((self.term1(), many0(rhs)))(input)?;
+
+            if rhs.len() == 0 {
+                Ok((input, lhs))
+            } else {
+                // translate rhs vector to Add<Add<..,Add>>>..
+                let rhs_head = &rhs[0];
+                let rhs = rhs
+                    .iter()
+                    .skip(1)
+                    .fold(rhs_head.1.clone(), |acc, x| match x {
+                        ('+', node) => {
+                            self.incr_int();
+                            MathExpr::Add(self.1, Box::new(acc), Box::new(node.clone()))
+                        }
+                        ('-', node) => {
+                            self.incr_int();
+                            MathExpr::Sub(self.1, Box::new(acc), Box::new(node.clone()))
+                        }
+                        (op, _) => panic!("unexpected operator encountered in expr: {}", op),
+                    });
+
+                self.incr_int();
+                let node = if rhs_head.0 == '+' {
+                    MathExpr::Add(self.1, Box::new(lhs), Box::new(rhs))
+                } else {
+                    MathExpr::Sub(self.1, Box::new(lhs), Box::new(rhs))
+                };
+                Ok((input, node))
+            }
+        }
+    }
+
+    // <term2> ::= <variable> | <number> | '(' <expr> ')'
+    fn term2(&self) -> impl Fn(&str) -> IResult<&str, MathExpr> + '_ {
+        |input| {
+            let (input, node) = alt((
+                self.variable(),
+                self.decimal(),
+                delimited(
+                    delimited(multispace0, char('('), multispace0),
+                    self.expr(),
+                    delimited(multispace0, char(')'), multispace0),
+                ),
+            ))(input)?;
+
+            Ok((input, node))
+        }
+    }
+
+    // <term1> ::= <term2> [ ('*'|'/') <term2> ]*
+    fn term1(&self) -> impl Fn(&str) -> IResult<&str, MathExpr> + '_ {
+        |input| {
+            let rhs = tuple((alt((char('*'), char('/'))), self.term2()));
+            let (input, (lhs, rhs)) = tuple((self.term2(), many0(rhs)))(input)?;
+
+            if rhs.len() == 0 {
+                Ok((input, lhs))
+            } else {
+                // translate rhs vector to Mul<Mul<..,Mul>>>..
+                let rhs_head = &rhs[0];
+                let rhs = rhs
+                    .iter()
+                    .skip(1)
+                    .fold(rhs_head.1.clone(), |acc, x| match x {
+                        ('*', node) => {
+                            self.incr_int();
+                            MathExpr::Mul(self.1, Box::new(acc), Box::new(node.clone()))
+                        }
+                        ('/', node) => {
+                            self.incr_int();
+                            MathExpr::Div(self.1, Box::new(acc), Box::new(node.clone()))
+                        }
+                        (op, _) => panic!("unexpected operator encountered in term1 {}", op),
+                    });
+
+                self.incr_int();
+                let node = if rhs_head.0 == '*' {
+                    MathExpr::Mul(self.1, Box::new(lhs), Box::new(rhs))
+                } else {
+                    MathExpr::Div(self.1, Box::new(lhs), Box::new(rhs))
+                };
+                Ok((input, node))
+            }
+        }
+    }
+
+    // <expr> ::= <term1> [ ('+'|'-') <term1> ]*
+    // <term1> ::= <term2> [ ('*'|'/') <term2> ]*
+    // <term2> ::= <variable> | <number> | '(' <expr> ')'
+    pub fn parse(&mut self) -> impl FnMut(&str, Field) -> IResult<&str, MathExpr> + '_ {
+        |input, f| {
+            // reset parser
+            self.0 = f;
+            self.1 = 0;
+            self.expr()(input)
+        }
+    }
 }
 
 #[cfg(test)]
