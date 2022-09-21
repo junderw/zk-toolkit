@@ -10,6 +10,7 @@ use nom::{
 };
 use crate::building_block::field::{Field, FieldElem};
 use num_bigint::{BigInt, BigUint, Sign};
+use std::cell::Cell;
 
 type SignalId = u128;
 
@@ -23,21 +24,17 @@ pub enum MathExpr {
   Sub(SignalId, Box<MathExpr>, Box<MathExpr>),
 }
 
-pub struct MathExprParser(Field, u128);
+// Should use Mutex instead of Cell if multi-threaded use
+pub struct MathExprParser(Field, Cell<u128>);
 
 impl MathExprParser {
-    pub fn new(f: Field, s: u128) -> Self {
-        Self(f, s)
+    pub fn new(f: Field) -> Self {
+        Self(f, Cell::new(0))
     }
 
     #[inline]
     fn incr_int(&self) {
-        let int = (&self.1) as *const u128 as *mut u128;
-        // Safety: Should use std::sync::Mutex, but performance!
-        // This is super unsafe
-        unsafe {
-            *int += 1;
-        }
+        self.1.set(self.1.get() + 1);
         /*
         // If self.1 was a Mutex<u128>
         let lock = self.1.lock().unwrap();
