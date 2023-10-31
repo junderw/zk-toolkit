@@ -1,3 +1,3 @@
 pub trait Reduce {
-  fn reduce(&self) -> Self;
+    fn reduce(&self) -> Self;
 }
