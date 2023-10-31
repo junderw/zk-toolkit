@@ -23,7 +23,6 @@ jobs:
       - name: Setup Rust
         uses: './.github/actions/ci-rust-setup'
         with:
-          cache-name: dev
           components: rustfmt
       - run: cargo fmt --all -- --check
 
