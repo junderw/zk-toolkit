@@ -84,7 +84,7 @@ impl SparseMatrix {
         vec
     }
 
-    pub fn set(&mut self, x: &impl ToBigUint, y: &impl ToBigUint, v: &impl ToBigUint) -> () {
+    pub fn set(&mut self, x: &impl ToBigUint, y: &impl ToBigUint, v: &impl ToBigUint) {
         let v = self.f.elem(v);
         let x = self.f.elem(x);
         let y = self.f.elem(y);
@@ -146,7 +146,7 @@ impl SparseMatrix {
         let mut col = SparseVec::new(&self.f, &self.height);
 
         for y in self.rows.keys() {
-            let src_row = self.rows.get(&y).unwrap();
+            let src_row = self.rows.get(y).unwrap();
             let v = src_row.get(x);
             if !v.e.is_zero() {
                 col.set(y, v);
@@ -158,7 +158,7 @@ impl SparseMatrix {
     pub fn transpose(&self) -> SparseMatrix {
         let mut m = SparseMatrix::new(&self.f, &self.height, &self.width);
         for y in self.rows.keys() {
-            let src_row = self.rows.get(&y).unwrap();
+            let src_row = self.rows.get(y).unwrap();
 
             for x in src_row.indices() {
                 let v = src_row.get(&x);
@@ -233,12 +233,12 @@ impl PartialEq for SparseMatrix {
     }
 }
 
-impl Into<Vec<Polynomial>> for SparseMatrix {
-    fn into(self) -> Vec<Polynomial> {
+impl From<SparseMatrix> for Vec<Polynomial> {
+    fn from(val: SparseMatrix) -> Self {
         let mut vec = vec![];
-        let mut i = self.height.f.elem(&0u8);
-        while &i < &self.height {
-            let p = Polynomial::from(&self.get_row(&i));
+        let mut i = val.height.f.elem(&0u8);
+        while i < val.height {
+            let p = Polynomial::from(&val.get_row(&i));
             vec.push(p);
             i.inc();
         }
@@ -249,16 +249,16 @@ impl Into<Vec<Polynomial>> for SparseMatrix {
 // coverts rows of vectors to a matrix
 impl From<&Vec<SparseVec>> for SparseMatrix {
     fn from(rows: &Vec<SparseVec>) -> Self {
-        assert!(rows.len() != 0, "Cannot build matrix from empty vector");
+        assert!(!rows.is_empty(), "Cannot build matrix from empty vector");
         let f = &rows[0].f;
         let width = &rows[0].size;
         let height = rows.len();
 
-        for i in 1..height {
-            if width != &rows[i].size {
+        for (i, row) in rows.iter().enumerate().skip(1) {
+            if width != &row.size {
                 panic!(
                     "different row sizes found; size is {:?} at 0, but {:?} at {}",
-                    width.e, &rows[i].size.e, i
+                    width.e, row.size.e, i
                 )
             }
         }

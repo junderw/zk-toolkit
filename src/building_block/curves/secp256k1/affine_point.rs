@@ -152,11 +152,7 @@ impl Zero<AffinePoint> for AffinePoint {
     }
 
     fn is_zero(&self) -> bool {
-        if let AffinePoint::AtInfinity = self {
-            true
-        } else {
-            false
-        }
+        matches!(self, AffinePoint::AtInfinity)
     }
 }
 
@@ -238,8 +234,8 @@ mod tests {
         match g {
             AffinePoint::AtInfinity => panic!("expected rational point, but got point at infinity"),
             AffinePoint::Rational { x, y } => {
-                let a = AffinePoint::new(&x, &y);
-                let b = AffinePoint::new(&x, &-y);
+                let a = AffinePoint::new(x, y);
+                let b = AffinePoint::new(x, &-y);
                 let exp = AffinePoint::AtInfinity;
                 let act = &a + &b;
                 assert_eq!(act, exp);
@@ -286,11 +282,11 @@ mod tests {
         y: &'a [u8; 64],
     }
 
-    impl<'a> Into<AffinePoint> for Xy<'a> {
-        fn into(self) -> AffinePoint {
+    impl<'a> From<Xy<'a>> for AffinePoint {
+        fn from(val: Xy<'a>) -> Self {
             let f = AffinePoint::base_field();
-            let gx = BigUint::parse_bytes(self.x, 16).unwrap();
-            let gy = BigUint::parse_bytes(self.y, 16).unwrap();
+            let gx = BigUint::parse_bytes(val.x, 16).unwrap();
+            let gy = BigUint::parse_bytes(val.y, 16).unwrap();
             AffinePoint::new(
                 &PrimeFieldElem::new(&Rc::new(f.clone()), &gx),
                 &PrimeFieldElem::new(&Rc::new(f.clone()), &gy),
@@ -442,7 +438,7 @@ mod tests {
             println!(
                 "Large number scalar mul done in {}.{:03} sec",
                 end.as_secs(),
-                end.subsec_nanos() / 1_000_000
+                end.subsec_millis()
             );
             assert_eq!(p, gk);
         }

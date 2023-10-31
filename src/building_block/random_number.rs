@@ -5,6 +5,12 @@ pub struct RandomNumber {
     pub gen: ChaChaRng,
 }
 
+impl Default for RandomNumber {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RandomNumber {
     pub fn new() -> Self {
         let gen = ChaChaRng::from_entropy();

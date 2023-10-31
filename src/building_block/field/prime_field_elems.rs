@@ -17,12 +17,11 @@ impl fmt::Debug for PrimeFieldElems {
     }
 }
 
-impl<'a> Index<usize> for PrimeFieldElems {
+impl Index<usize> for PrimeFieldElems {
     type Output = PrimeFieldElem;
 
     fn index(&self, index: usize) -> &Self::Output {
-        let x = &self.0[index];
-        x
+        &self.0[index] as _
     }
 }
 
@@ -32,7 +31,7 @@ impl<'a> PrimeFieldElems {
     }
 
     pub fn sum(&self) -> PrimeFieldElem {
-        assert!(self.0.len() > 0);
+        assert!(!self.0.is_empty());
         let xs = &self.0;
         xs.iter().fold(xs[0].f.elem(&0u8), |acc, x| acc + x)
     }

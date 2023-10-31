@@ -40,10 +40,10 @@ impl R1CS {
         let mut i = f.elem(&0u8);
 
         for term in tmpl.witness.iter() {
-            if !witness_instance.contains_key(&term) {
+            if !witness_instance.contains_key(term) {
                 return Err(format!("'{:?}' is missing in witness_instance", term));
             }
-            witness[&i] = witness_instance.get(&term).unwrap().clone();
+            witness[&i] = witness_instance.get(term).unwrap().clone();
             i.inc();
         }
 
@@ -65,7 +65,7 @@ impl R1CS {
                 ));
             }
         }
-        println!("");
+        println!();
         Ok(())
     }
 
@@ -74,7 +74,7 @@ impl R1CS {
         tmpl: &R1CSTmpl,
         witness: &HashMap<Term, PrimeFieldElem>,
     ) -> Result<R1CS, String> {
-        let (witness, mid_beg) = R1CS::build_witness_vec(&f, tmpl, witness)?;
+        let (witness, mid_beg) = R1CS::build_witness_vec(f, tmpl, witness)?;
         let r1cs = R1CS {
             constraints: tmpl.constraints.clone(),
             witness,

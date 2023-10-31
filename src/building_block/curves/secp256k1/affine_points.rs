@@ -13,9 +13,9 @@ pub struct AffinePoints {
 }
 
 impl AffinePoints {
-    pub fn new(points: &Vec<AffinePoint>) -> Self {
+    pub fn new(points: &[AffinePoint]) -> Self {
         AffinePoints {
-            points: points.clone(),
+            points: points.to_owned(),
         }
     }
 

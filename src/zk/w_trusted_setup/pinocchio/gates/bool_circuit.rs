@@ -15,13 +15,13 @@ impl Processor {
     pub fn eval(root: &BoolCircuit) -> bool {
         match root {
             BoolCircuit::Leaf(x) => *x,
-            BoolCircuit::And(a, b) => Processor::eval(&a) && Processor::eval(&b),
+            BoolCircuit::And(a, b) => Processor::eval(a) && Processor::eval(b),
             BoolCircuit::Xor(a, b) => {
-                let a = Processor::eval(&a);
-                let b = Processor::eval(&b);
+                let a = Processor::eval(a);
+                let b = Processor::eval(b);
                 !(a && b) && (a || b)
             }
-            BoolCircuit::Or(a, b) => Processor::eval(&a) || Processor::eval(&b),
+            BoolCircuit::Or(a, b) => Processor::eval(a) || Processor::eval(b),
         }
     }
 

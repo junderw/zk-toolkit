@@ -12,7 +12,7 @@ use std::{
     sync::Arc,
 };
 
-#[derive(Clone, Hash)]
+#[derive(Clone, Hash, PartialEq, Eq)]
 pub struct PrimeFieldElem {
     pub f: Arc<PrimeField>,
     pub e: BigUint,
@@ -44,14 +44,6 @@ impl ToBigUint for PrimeFieldElem {
     }
 }
 
-impl PartialEq for PrimeFieldElem {
-    fn eq(&self, other: &PrimeFieldElem) -> bool {
-        self.f == other.f && self.e == other.e
-    }
-}
-
-impl Eq for PrimeFieldElem {}
-
 impl Ord for PrimeFieldElem {
     fn cmp(&self, other: &PrimeFieldElem) -> Ordering {
         self.e.cmp(&other.e)
@@ -60,7 +52,7 @@ impl Ord for PrimeFieldElem {
 
 impl PartialOrd for PrimeFieldElem {
     fn partial_cmp(&self, other: &PrimeFieldElem) -> Option<Ordering> {
-        self.e.partial_cmp(&other.e)
+        Some(self.e.cmp(&other.e))
     }
 }
 
@@ -238,7 +230,7 @@ impl PrimeFieldElem {
         }
     }
 
-    pub fn inc(&mut self) -> () {
+    pub fn inc(&mut self) {
         self.e = self.plus(&1u8).e;
     }
 
@@ -334,7 +326,7 @@ impl PrimeFieldElem {
         let mut xs = vec![];
         let mut x = self.f.elem(&1u8);
 
-        while &i < &n {
+        while i < n {
             xs.push(x.clone());
             x = x * &self.e;
             i += one;
@@ -350,7 +342,7 @@ impl PrimeFieldElem {
         let mut i = zero.clone();
         let mut xs = vec![];
 
-        while &i < &n {
+        while i < n {
             xs.push(self.clone());
             i += one;
         }
@@ -405,10 +397,8 @@ impl PrimeFieldElem {
             while new_v < zero.clone() {
                 new_v += &order;
             }
-        } else {
-            if &new_v >= &order {
-                new_v %= order;
-            }
+        } else if new_v >= order {
+            new_v %= order;
         }
         Ok(PrimeFieldElem {
             f: self.f.clone(),
@@ -1542,7 +1532,7 @@ mod tests {
             let base = PrimeFieldElem::new(&f, &t.0);
             let exponent = BigUint::from(t.1);
             let expected = BigUint::from(t.2);
-            assert_eq!(base.pow(&exponent).e, BigUint::from(expected));
+            assert_eq!(base.pow(&exponent).e, expected);
         }
     }
 

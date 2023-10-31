@@ -122,7 +122,7 @@ impl Bulletproofs {
         if use_inner_product_argument {
             let u = AffinePoint::rand_point(true);
             let Pp = &(P + h * mu.negate() + &u * (l * r).sum());
-            Bulletproofs::inner_product_argument(&n, gg, hhp, &u, Pp, l, r)
+            Bulletproofs::inner_product_argument(n, gg, hhp, &u, Pp, l, r)
         } else {
             let rhs_66_67 = ((h * mu) + (gg * l).sum()) + (hhp * r).sum();
             if P != rhs_66_67 {
@@ -231,7 +231,7 @@ mod tests {
     fn test_range_proof() {
         let curve_group = &AffinePoint::curve_group();
 
-        let aL = PrimeFieldElems::new(&vec![
+        let aL = PrimeFieldElems::new(&[
             curve_group.elem(&1u8),
             curve_group.elem(&0u8),
             curve_group.elem(&0u8),
@@ -258,7 +258,7 @@ mod tests {
                 &hh,
                 use_inner_product_argument,
             );
-            assert!(res == true);
+            assert!(res);
         }
     }
 }

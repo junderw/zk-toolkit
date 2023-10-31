@@ -52,26 +52,26 @@ mod half_adder_tests {
     #[test]
     fn add_0_0() {
         let res = HalfAdder::add(false, false);
-        assert_eq!(res.sum, false);
-        assert_eq!(res.carry, false);
+        assert!(!res.sum);
+        assert!(!res.carry);
     }
 
     #[test]
     fn add_1_0_or_0_1() {
         let res = HalfAdder::add(true, false);
-        assert_eq!(res.sum, true);
-        assert_eq!(res.carry, false);
+        assert!(res.sum);
+        assert!(!res.carry);
 
         let res = HalfAdder::add(false, true);
-        assert_eq!(res.sum, true);
-        assert_eq!(res.carry, false);
+        assert!(res.sum);
+        assert!(!res.carry);
     }
 
     #[test]
     fn add_1_1() {
         let res = HalfAdder::add(true, true);
-        assert_eq!(res.sum, false);
-        assert_eq!(res.carry, true);
+        assert!(!res.sum);
+        assert!(res.carry);
     }
 }
 
@@ -82,44 +82,44 @@ mod full_adder_tests {
     #[test]
     fn single_inst_add_0_0_0() {
         let res = FullAdder::add(false, false, false);
-        assert_eq!(res.sum, false);
-        assert_eq!(res.carry, false);
+        assert!(!res.sum);
+        assert!(!res.carry);
     }
 
     #[test]
     fn single_inst_add_1_0_0_or_0_1_0_or_0_0_1() {
         let res = FullAdder::add(true, false, false);
-        assert_eq!(res.sum, true);
-        assert_eq!(res.carry, false);
+        assert!(res.sum);
+        assert!(!res.carry);
 
         let res = FullAdder::add(false, true, false);
-        assert_eq!(res.sum, true);
-        assert_eq!(res.carry, false);
+        assert!(res.sum);
+        assert!(!res.carry);
 
         let res = FullAdder::add(false, false, true);
-        assert_eq!(res.sum, true);
-        assert_eq!(res.carry, false);
+        assert!(res.sum);
+        assert!(!res.carry);
     }
 
     #[test]
     fn single_inst_add_1_1_0_or_1_0_1_or_0_1_1() {
         let res = FullAdder::add(true, true, false);
-        assert_eq!(res.sum, false);
-        assert_eq!(res.carry, true);
+        assert!(!res.sum);
+        assert!(res.carry);
 
         let res = FullAdder::add(true, false, true);
-        assert_eq!(res.sum, false);
-        assert_eq!(res.carry, true);
+        assert!(!res.sum);
+        assert!(res.carry);
 
         let res = FullAdder::add(false, true, true);
-        assert_eq!(res.sum, false);
-        assert_eq!(res.carry, true);
+        assert!(!res.sum);
+        assert!(res.carry);
     }
 
     #[test]
     fn single_inst_add_1_1_1() {
         let res = FullAdder::add(true, true, true);
-        assert_eq!(res.sum, true);
-        assert_eq!(res.carry, true);
+        assert!(res.sum);
+        assert!(res.carry);
     }
 }

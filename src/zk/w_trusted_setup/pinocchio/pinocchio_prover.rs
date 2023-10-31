@@ -38,7 +38,7 @@ impl PinocchioProver {
         let gates = &Gate::build(f, &eq);
         let tmpl = &R1CSTmpl::new(f, gates);
 
-        let r1cs = R1CS::from_tmpl(f, tmpl, &witness_map).unwrap();
+        let r1cs = R1CS::from_tmpl(f, tmpl, witness_map).unwrap();
         r1cs.validate().unwrap();
 
         let qap = QAP::build(f, &r1cs);
@@ -47,11 +47,11 @@ impl PinocchioProver {
         let p = qap.build_p(&r1cs.witness);
 
         let max_degree: usize = {
-            let xs = vec![
+            let xs = [
                 &qap.vi[..],
                 &qap.wi[..],
                 &qap.yi[..],
-                &vec![p.clone(), t.clone()],
+                &[p.clone(), t.clone()],
             ]
             .concat();
             let n: PrimeFieldElem = xs.iter().map(|x| x.degree()).max().unwrap();

@@ -1,3 +1,4 @@
+#[allow(clippy::module_inception)]
 pub mod hasher;
 pub mod hmac;
 pub mod sha256;

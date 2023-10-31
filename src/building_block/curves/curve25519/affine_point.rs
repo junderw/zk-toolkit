@@ -97,12 +97,12 @@ impl AffinePoint {
         let xx = (y.sq() - 1u8) / ((d * y.sq()) + 1u8);
 
         // calculate the square root of xx assuming a^((q-1)/4) = 1 mod q
-        let mut x = (&xx).pow(&((q + &3u8) / &8u8));
+        let mut x = xx.pow(&((q + 3u8) / 8u8));
 
         // if that doesn't match, calculate the square root of xx again
         // assuming a^((q-1)/4) = -1 mod q
-        if &x.sq() != &xx {
-            let I = f.elem(&2u8).pow(&((q - &1u8) / &4u8));
+        if x.sq() != xx {
+            let I = f.elem(&2u8).pow(&((q - 1u8) / 4u8));
             x = &x * &I;
         }
         let root_parity = Self::get_parity(&x);
@@ -116,8 +116,8 @@ impl AffinePoint {
         let f = Self::base_field();
 
         // d = -121665 / 121666
-        let d = -f.elem(&121665u32) / 121666u32;
-        d
+
+        -f.elem(&121665u32) / 121666u32
     }
 }
 
@@ -191,11 +191,7 @@ impl Zero<AffinePoint> for AffinePoint {
     }
 
     fn is_zero(&self) -> bool {
-        if let AffinePoint::AtInfinity = self {
-            true
-        } else {
-            false
-        }
+        matches!(self, AffinePoint::AtInfinity)
     }
 }
 
@@ -233,7 +229,7 @@ mod tests {
         }
         {
             let pt = B + B;
-            assert!(pt.is_zero() == false);
+            assert!(!pt.is_zero());
         }
     }
 

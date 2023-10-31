@@ -12,6 +12,12 @@ pub struct PinocchioVerifier {
     pairing: Pairing,
 }
 
+impl Default for PinocchioVerifier {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PinocchioVerifier {
     pub fn new() -> Self {
         let pairing = Pairing::new();

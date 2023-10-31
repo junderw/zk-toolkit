@@ -9,7 +9,7 @@ use num_traits::Zero as NumTraitsZero;
 use rand::RngCore;
 use std::sync::Arc;
 
-#[derive(Debug, Clone, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct PrimeField {
     order: BigUint,
 }
@@ -40,12 +40,12 @@ impl PrimeField {
         if n.sign() == Sign::Minus {
             let order = &BigInt::from_biguint(Sign::Plus, self.order.clone());
             let mut n = -n;
-            n = n % order;
+            n %= order;
             n = order - n;
             let n = n.to_biguint().unwrap();
             PrimeFieldElem::new(&f, &n)
         } else {
-            let n = BigInt::from(n).to_biguint().unwrap();
+            let n = n.to_biguint().unwrap();
             PrimeFieldElem::new(&f, &n)
         }
     }
@@ -109,11 +109,3 @@ impl PrimeField {
         xs
     }
 }
-
-impl PartialEq for PrimeField {
-    fn eq(&self, other: &Self) -> bool {
-        self.order == other.order
-    }
-}
-
-impl Eq for PrimeField {}

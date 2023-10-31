@@ -30,7 +30,7 @@ impl<'a> Block<'a> {
         let mut blocks: Vec<Block<'a>> = vec![];
         let num_blocks = msg.len() / block_size;
         for i in 0..num_blocks {
-            let block: Block<'a> = Block::of(&msg, i, block_size);
+            let block: Block<'a> = Block::of(msg, i, block_size);
             blocks.push(block);
         }
         blocks
@@ -186,7 +186,7 @@ pub trait CoreLogic<
             v.extend(vec![0u8; k]);
         }
         // append length part to the end
-        let msg_len: usize = (msg.len() * 8).try_into().unwrap();
+        let msg_len = msg.len() * 8;
         let msg_len_be = msg_len.to_be_bytes();
 
         // write msg_len to length part

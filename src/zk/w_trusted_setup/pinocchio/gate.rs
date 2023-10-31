@@ -18,6 +18,8 @@ impl std::fmt::Debug for Gate {
 
 impl Gate {
     // traverse the Equation tree generating statement at each Add/Mul node
+    // TODO: Use f somewhere or remove f
+    #[allow(clippy::only_used_in_recursion)]
     fn traverse_lhs(f: &PrimeField, expr: &MathExpr, gates: &mut Vec<Gate>) -> Term {
         match expr {
             MathExpr::Num(n) => Term::Num(n.clone()),

@@ -53,7 +53,7 @@ impl G1Point {
     pub fn inv(&self) -> Self {
         match self {
             G1Point::AtInfinity => panic!("No inverse exists for point at infinitty"),
-            G1Point::Rational { x, y } => G1Point::new(&x, &y.inv()),
+            G1Point::Rational { x, y } => G1Point::new(x, &y.inv()),
         }
     }
 
@@ -128,10 +128,7 @@ impl Zero<G1Point> for G1Point {
     }
 
     fn is_zero(&self) -> bool {
-        match self {
-            G1Point::AtInfinity => true,
-            _ => false,
-        }
+        matches!(self, G1Point::AtInfinity)
     }
 }
 
@@ -239,8 +236,8 @@ mod tests {
         match g {
             G1Point::AtInfinity => panic!("expected rational point, but got point at infinity"),
             G1Point::Rational { x, y } => {
-                let a = G1Point::new(&x, &y);
-                let b = G1Point::new(&x, &-y);
+                let a = G1Point::new(x, y);
+                let b = G1Point::new(x, &-y);
                 let exp = G1Point::AtInfinity;
                 let act = &a + &b;
                 assert_eq!(act, exp);
@@ -286,11 +283,11 @@ mod tests {
         y: &'a [u8],
     }
 
-    impl<'a> Into<G1Point> for &Xy<'a> {
-        fn into(self) -> G1Point {
+    impl<'a> From<&Xy<'a>> for G1Point {
+        fn from(val: &Xy<'a>) -> Self {
             let f = P::base_prime_field();
-            let gx = BigUint::parse_bytes(self.x, 10).unwrap();
-            let gy = BigUint::parse_bytes(self.y, 10).unwrap();
+            let gx = BigUint::parse_bytes(val.x, 10).unwrap();
+            let gy = BigUint::parse_bytes(val.y, 10).unwrap();
             G1Point::new(
                 &Fq1::new(&Rc::new(f.clone()), &gx),
                 &Fq1::new(&Rc::new(f.clone()), &gy),

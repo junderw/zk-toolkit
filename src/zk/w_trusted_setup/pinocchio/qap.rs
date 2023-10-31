@@ -109,7 +109,7 @@ impl QAP {
             i.inc();
         }
         // aggregate (x-i) polynomial into a single polynomial
-        let mut acc_poly = Polynomial::new(&f, &vec![f.elem(&1u8)]);
+        let mut acc_poly = Polynomial::new(f, &vec![f.elem(&1u8)]);
         for poly in polys {
             acc_poly = acc_poly.mul(&poly);
         }

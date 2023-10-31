@@ -50,22 +50,24 @@ impl R1CSTmpl {
             Term::Num(_) => (), // Num is represented as multiple of Term::One, so not adding to witness
             Term::Out => (),    // not categorized as inputs or mid
             Term::Var(_) => {
-                if !inputs.contains(&t) {
+                if !inputs.contains(t) {
                     inputs.push(t.clone())
                 }
             }
             Term::TmpVar(_) => {
-                if !mid.contains(&t) {
+                if !mid.contains(t) {
                     mid.push(t.clone())
                 }
             }
             Term::Sum(a, b) => {
-                R1CSTmpl::categorize_witness_terms(&a, inputs, mid);
-                R1CSTmpl::categorize_witness_terms(&b, inputs, mid);
+                R1CSTmpl::categorize_witness_terms(a, inputs, mid);
+                R1CSTmpl::categorize_witness_terms(b, inputs, mid);
             }
         }
     }
 
+    // TODO: Use f (besides only passing to recursion) or remove it
+    #[allow(clippy::only_used_in_recursion)]
     fn build_constraint_vec(
         f: &PrimeField,
         vec: &mut SparseVec,
@@ -74,14 +76,14 @@ impl R1CSTmpl {
     ) {
         match term {
             Term::Sum(a, b) => {
-                R1CSTmpl::build_constraint_vec(f, vec, &a, indices);
-                R1CSTmpl::build_constraint_vec(f, vec, &b, indices);
+                R1CSTmpl::build_constraint_vec(f, vec, a, indices);
+                R1CSTmpl::build_constraint_vec(f, vec, b, indices);
             }
             Term::Num(n) => {
                 vec.set(&0u8, n); // Num is represented as Term::One at index 0 times n
             }
             x => {
-                let index = indices.get(&x).unwrap();
+                let index = indices.get(x).unwrap();
                 vec.set(index, &1u8);
             }
         }
@@ -300,7 +302,7 @@ mod tests {
             assert!(mid_beg == f.elem(&2u8));
 
             let mut constraint = SparseVec::new(f, &2u8);
-            R1CSTmpl::build_constraint_vec(f, &mut constraint, &term, &indices);
+            R1CSTmpl::build_constraint_vec(f, &mut constraint, term, &indices);
 
             // should be mapped to One term at index 0
             assert_eq!(constraint.get(&0u8), &f.elem(&4u8));
@@ -321,7 +323,7 @@ mod tests {
             assert!(mid_beg == f.elem(&4u8));
 
             let mut constraint = SparseVec::new(f, &3u8);
-            R1CSTmpl::build_constraint_vec(f, &mut constraint, &term, &indices);
+            R1CSTmpl::build_constraint_vec(f, &mut constraint, term, &indices);
 
             // y and z should be stored at index 1 and 2 of witness vector respectively
             assert_eq!(constraint.get(&1u8), &f.elem(&1u8));
@@ -350,7 +352,7 @@ mod tests {
         assert_eq!(h.len(), w.len());
 
         for (i, term) in w.iter().enumerate() {
-            assert_eq!(h.get(&term).unwrap(), &f.elem(&i));
+            assert_eq!(h.get(term).unwrap(), &f.elem(&i));
         }
     }
 
@@ -372,7 +374,7 @@ mod tests {
             })
             .collect::<Vec<String>>()
             .join(" + ");
-        format!("{}", s)
+        s.to_string()
     }
 
     #[test]

@@ -15,10 +15,10 @@ use std::{
 
 // TODO use SparseVec instead of Vec to hold coeffs
 #[derive(Clone)]
+#[non_exhaustive]
 pub struct Polynomial {
     pub f: PrimeField,
     pub coeffs: Vec<PrimeFieldElem>, // e.g. 2x^3 + 5x + 9 -> [9, 5, 0, 2]
-    _private: (),                    // to force using new()
 }
 
 impl Deref for Polynomial {
@@ -58,7 +58,7 @@ impl PartialEq<Polynomial> for Polynomial {
 
         // check if smaller is a subset of larger
         for i in 0..smaller.len() {
-            if &smaller[i] != &larger[i] {
+            if smaller[i] != larger[i] {
                 return false;
             }
         }
@@ -84,7 +84,7 @@ impl Debug for Polynomial {
 
                 // if not the constant term, write variable after number
                 if i < last_idx {
-                    s.push_str("x");
+                    s.push('x');
                     // write exponent if x^2 or higher
                     if i < last_idx - 1 {
                         // second to last corresponds to x^1
@@ -97,7 +97,7 @@ impl Debug for Polynomial {
 
         let expr = terms
             .iter()
-            .map(|x| format!("{}", x))
+            .map(|x| x.to_string())
             .collect::<Vec<String>>()
             .join(" + ");
         write!(f, "{}", expr)
@@ -112,13 +112,12 @@ pub enum DivResult {
 
 impl Polynomial {
     pub fn new(f: &PrimeField, coeffs: &Vec<PrimeFieldElem>) -> Self {
-        if coeffs.len() == 0 {
+        if coeffs.is_empty() {
             panic!("coeffs is empty");
         }
         let x = Polynomial {
             f: f.clone(),
             coeffs: coeffs.clone(),
-            _private: (),
         };
         x.normalize()
     }
@@ -151,7 +150,6 @@ impl Polynomial {
         Polynomial {
             f: self.f.clone(),
             coeffs: norm_coeffs,
-            _private: (),
         }
     }
 
@@ -173,7 +171,6 @@ impl Polynomial {
         let x = Polynomial {
             f: self.f.clone(),
             coeffs,
-            _private: (),
         };
         x.normalize() // normalizing b/c addition can make term coefficect zero
     }
@@ -197,7 +194,6 @@ impl Polynomial {
         Polynomial {
             f: self.f.clone(),
             coeffs,
-            _private: (),
         }
     }
 
@@ -212,7 +208,6 @@ impl Polynomial {
         let p = Polynomial {
             f: self.f.clone(),
             coeffs,
-            _private: (),
         };
         p.normalize()
     }
@@ -252,13 +247,11 @@ impl Polynomial {
             DivResult::Quotient(Polynomial {
                 f: self.f.clone(),
                 coeffs: quotient_coeffs,
-                _private: (),
             })
         } else {
             let quotient = Polynomial {
                 f: self.f.clone(),
                 coeffs: quotient_coeffs,
-                _private: (),
             };
             DivResult::QuotientRemainder((quotient, dividend))
         }
@@ -289,26 +282,28 @@ impl Polynomial {
     }
 
     pub fn degree(&self) -> PrimeFieldElem {
-        if self.coeffs.len() == 0 {
+        if self.coeffs.is_empty() {
             panic!("should have at least 1 coeff. check code");
         }
         self.f.elem(&(self.coeffs.len() - 1))
     }
 
-    #[allow(non_snake_case)]
     pub fn eval_with_g1_hidings(&self, powers: &[G1Point]) -> G1Point {
+        assert!(powers.len() >= self.coeffs.len());
+
         let mut sum = G1Point::zero();
-        for i in 0..self.coeffs.len() {
-            sum = sum + (&powers[i] * &self.coeffs[i]);
+        for (power, coeff) in powers.iter().zip(self.coeffs.iter()) {
+            sum = sum + (power * coeff);
         }
         sum
     }
 
-    #[allow(non_snake_case)]
     pub fn eval_with_g2_hidings(&self, powers: &[G2Point]) -> G2Point {
+        assert!(powers.len() >= self.coeffs.len());
+
         let mut sum = G2Point::zero();
-        for i in 0..self.coeffs.len() {
-            sum = sum + (&powers[i] * &self.coeffs[i]);
+        for (power, coeff) in powers.iter().zip(self.coeffs.iter()) {
+            sum = sum + (power * coeff);
         }
         sum
     }
@@ -325,7 +320,7 @@ impl Polynomial {
 }
 
 // TODO avoid duplicating code
-impl<'a> Add<&Polynomial> for Polynomial {
+impl Add<&Polynomial> for Polynomial {
     type Output = Polynomial;
 
     fn add(self, rhs: &Polynomial) -> Self::Output {
@@ -333,7 +328,7 @@ impl<'a> Add<&Polynomial> for Polynomial {
     }
 }
 
-impl<'a> Add<&Polynomial> for &Polynomial {
+impl Add<&Polynomial> for &Polynomial {
     type Output = Polynomial;
 
     fn add(self, rhs: &Polynomial) -> Self::Output {
@@ -357,19 +352,18 @@ impl_mul!(Polynomial, &Polynomial);
 impl_mul!(&Polynomial, Polynomial);
 impl_mul!(&Polynomial, &Polynomial);
 
-impl<'a> Mul<&PrimeFieldElem> for &Polynomial {
+impl Mul<&PrimeFieldElem> for &Polynomial {
     type Output = Polynomial;
 
     fn mul(self, rhs: &PrimeFieldElem) -> Self::Output {
         Polynomial {
             f: self.f.clone(),
             coeffs: self.coeffs.iter().map(|coeff| coeff * rhs).collect(),
-            _private: (),
         }
     }
 }
 
-impl<'a> Sub<&Polynomial> for Polynomial {
+impl Sub<&Polynomial> for Polynomial {
     type Output = Polynomial;
 
     fn sub(self, rhs: &Polynomial) -> Self::Output {
@@ -733,7 +727,7 @@ mod tests {
             let a = &Polynomial::new(f, &vec![f.elem(&12u8), f.elem(&7u8)]);
             let c = Polynomial::new(f, &vec![f.elem(&0u8)]);
             println!("res = {:?}", a.minus(a));
-            assert!(a.minus(&a) == c);
+            assert!(a.minus(a) == c);
         }
     }
 
@@ -975,7 +969,7 @@ mod tests {
             let b = &Polynomial::new(f, &vec![f.elem(&4u8), f.elem(&5u8)]);
             // 10x^2 + 23x + 12
             let c = &Polynomial::new(f, &vec![f.elem(&12u8), f.elem(&23u8), f.elem(&10u8)]);
-            let res = a.multiply_by(&b);
+            let res = a.multiply_by(b);
             println!("({:?})({:?}) = {:?}", a, b, res);
             assert!(&res == c);
         }

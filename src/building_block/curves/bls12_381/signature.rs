@@ -7,6 +7,12 @@ pub struct Signer {
     pairing: Pairing,
 }
 
+impl Default for Signer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Signer {
     pub fn new() -> Self {
         let g1 = G1Point::g();
@@ -20,12 +26,12 @@ impl Signer {
         &self.g1 * sk
     }
 
-    pub fn sign(&self, m: &Vec<u8>, sk: &PrivateKey) -> G2Point {
+    pub fn sign(&self, m: &[u8], sk: &PrivateKey) -> G2Point {
         let hash_m = &G2Point::hash_to_g2point(m);
         hash_m * sk
     }
 
-    pub fn verify(&self, m: &Vec<u8>, sig: &G2Point, pk: &G1Point) -> bool {
+    pub fn verify(&self, m: &[u8], sig: &G2Point, pk: &G1Point) -> bool {
         let hash_m = &G2Point::hash_to_g2point(m);
         let lhs = self.pairing.tate(&self.g1, sig);
         let rhs = self.pairing.tate(pk, hash_m);
@@ -45,7 +51,7 @@ mod tests {
         let pk = &signer.gen_public_key(sk);
 
         let m = &b"chili crab".to_vec();
-        let sig = &signer.sign(m, &sk);
+        let sig = &signer.sign(m, sk);
 
         let is_valid_sig = signer.verify(m, sig, pk);
         assert!(is_valid_sig);

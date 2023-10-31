@@ -23,6 +23,12 @@ pub struct Ed25519Sha512 {
     H: Sha512,
 }
 
+impl Default for Ed25519Sha512 {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Ed25519Sha512 {
     pub fn new() -> Self {
         Ed25519Sha512 { H: Sha512() }
@@ -63,7 +69,7 @@ impl Ed25519Sha512 {
             AffinePoint::AtInfinity => panic!("Not expecting point at infinity"),
             AffinePoint::Rational { x, y } => {
                 // get parity of x
-                let x_parity = Ed25519Sha512::get_parity(&x);
+                let x_parity = Ed25519Sha512::get_parity(x);
 
                 // write y to 32-byte buffer as little-endian integer
                 let mut buf = Self::write_biguint_to_32_byte_buf_as_le_integer(&y.e);
@@ -81,7 +87,7 @@ impl Ed25519Sha512 {
     }
 
     fn decode_point(&self, pt_buf: &[u8; 32]) -> AffinePoint {
-        let mut pt_buf = pt_buf.clone();
+        let mut pt_buf = *pt_buf;
 
         // get parity of x
         let x_parity = if pt_buf[31] & 0b1000_0000 == 0 {
@@ -110,8 +116,8 @@ impl Ed25519Sha512 {
         let mut buf = [0u8; 32];
         buf[..].copy_from_slice(&digest_lower_32_bytes[0..32]);
         Self::prune_32_byte_buf(&mut buf);
-        let s = BigUint::from_bytes_le(&buf);
-        s
+
+        BigUint::from_bytes_le(&buf)
     }
 
     pub fn gen_pub_key(&self, prv_key: &[u8; 32]) -> [u8; 32] {
@@ -122,8 +128,8 @@ impl Ed25519Sha512 {
         let s = Self::gen_s(&digest[0..32].try_into().unwrap());
         let pub_key_pt = &AffinePoint::B() * &AffinePoint::base_field().elem(&s);
         println!("pt={:?}", &pub_key_pt);
-        let pub_key = self.encode_point(&pub_key_pt);
-        pub_key
+
+        self.encode_point(&pub_key_pt)
     }
 
     pub fn sign(&self, msg: &[u8], prv_key: &[u8; 32]) -> [u8; 64] {
@@ -167,7 +173,7 @@ impl Ed25519Sha512 {
         let R = self.encode_point(&R_pt);
         let R_pub_key_msg = [&R, pub_key, msg].concat();
         let k = BigUint::from_bytes_le(&self.H.get_digest(&R_pub_key_msg));
-        let A_pt = self.decode_point(&pub_key);
+        let A_pt = self.decode_point(pub_key);
 
         let lhs_factor = f_l.elem(&(S * 8u8));
         let lhs = B * lhs_factor;
@@ -195,7 +201,7 @@ mod tests {
         let exp_pub_key = hex::decode(exp_pub_key).unwrap();
         assert_eq!(exp_pub_key, pub_key);
 
-        let sig = curve.sign(&msg, &prv_key);
+        let sig = curve.sign(msg, &prv_key);
         let exp_sig: [u8; 64] = hex::decode(exp_sig).unwrap().try_into().unwrap();
 
         assert_eq!(sig, exp_sig);

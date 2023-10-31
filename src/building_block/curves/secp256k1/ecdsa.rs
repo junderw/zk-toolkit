@@ -85,19 +85,14 @@ impl Ecdsa {
         let n = f_n.order_ref();
 
         // confirm pub_key is not inf
-        if pub_key.is_zero() {
-            false
-        }
-        // confirm pub_key is on the curve
-        else if !pub_key.is_rational_point() {
-            false
-        }
-        // confirm n * pub_key is inf
-        else if !(pub_key * f_q.elem(n)).is_zero() {
-            false
-        }
-        // check if r and s are in [1, n-1]
-        else if *&sig.r.is_zero() || *&sig.s.is_zero() || n <= &sig.r.e || n <= &sig.s.e {
+        if pub_key.is_zero()
+            // confirm pub_key is on the curve
+            || !pub_key.is_rational_point()
+            // confirm n * pub_key is inf
+            || !(pub_key * f_q.elem(n)).is_zero()
+            // check if r and s are in [1, n-1]
+            || sig.r.is_zero() || sig.s.is_zero() || n <= &sig.r.e || n <= &sig.s.e
+        {
             false
         } else {
             // compute e = HASH(m)
@@ -150,7 +145,7 @@ mod tests {
                     AffinePoint::AtInfinity => panic!("Should not be visited"),
                     p => {
                         let is_verified = ecdsa.verify(&sig, &p, &message);
-                        assert_eq!(is_verified, false);
+                        assert!(!is_verified);
                     }
                 }
             }
@@ -172,7 +167,7 @@ mod tests {
         // use inf public key for verifying
         let pub_key = AffinePoint::zero();
         let is_verified = ecdsa.verify(&sig, &pub_key, &message);
-        assert_eq!(is_verified, false);
+        assert!(!is_verified);
     }
 
     #[test]
@@ -197,14 +192,14 @@ mod tests {
             s: sig.s.clone(),
         };
         let is_verified = ecdsa.verify(&sig_r_too_large, &pub_key, &message);
-        assert_eq!(is_verified, false);
+        assert!(!is_verified);
 
         let sig_r_too_small = Signature {
             r: sig.r.f.elem(&BigUint::zero()),
             s: sig.s,
         };
         let is_verified = ecdsa.verify(&sig_r_too_small, &pub_key, &message);
-        assert_eq!(is_verified, false);
+        assert!(!is_verified);
     }
 
     #[test]
@@ -229,14 +224,14 @@ mod tests {
             s: sig.s.clone().f.elem(curve_group.order_ref()),
         };
         let is_verified = ecdsa.verify(&sig_s_too_large, &pub_key, &message);
-        assert_eq!(is_verified, false);
+        assert!(!is_verified);
 
         let sig_s_too_small = Signature {
             r: sig.r,
             s: sig.s.f.elem(&BigUint::zero()),
         };
         let is_verified = ecdsa.verify(&sig_s_too_small, &pub_key, &message);
-        assert_eq!(is_verified, false);
+        assert!(!is_verified);
     }
 
     #[test]
@@ -254,7 +249,7 @@ mod tests {
         // create public key from the private key used for signing for verifying
         let pub_key = ecdsa.gen_pub_key(&priv_key);
         let is_verified = ecdsa.verify(&sig, &pub_key, &message);
-        assert_eq!(is_verified, true);
+        assert!(is_verified);
     }
 
     #[test]
@@ -275,7 +270,7 @@ mod tests {
         let pub_key = g * &priv_key;
 
         let is_verified = ecdsa.verify(&sig, &pub_key, &message);
-        assert_eq!(is_verified, false);
+        assert!(!is_verified);
     }
 
     #[test]
@@ -297,6 +292,6 @@ mod tests {
         // change message and verify
         let message = vec![1u8, 2, 3, 4];
         let is_verified = ecdsa.verify(&sig, &pub_key, &message);
-        assert_eq!(is_verified, false);
+        assert!(!is_verified);
     }
 }

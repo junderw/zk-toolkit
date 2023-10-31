@@ -55,7 +55,7 @@ impl G2Point {
     pub fn inv(&self) -> Self {
         match self {
             G2Point::AtInfinity => panic!("No inverse exists for point at infinitty"),
-            G2Point::Rational { x, y } => G2Point::new(&x, &y.inv()),
+            G2Point::Rational { x, y } => G2Point::new(x, &y.inv()),
         }
     }
 
@@ -79,7 +79,7 @@ impl G2Point {
     }
 
     // TODO implement properly with hash-and-check or SWU map
-    pub fn hash_to_g2point(buf: &Vec<u8>) -> G2Point {
+    pub fn hash_to_g2point(buf: &[u8]) -> G2Point {
         let n = BigUint::from_bytes_be(buf);
         let n = P::subgroup().elem(&n);
         G2Point::g() * n
@@ -115,10 +115,7 @@ impl Zero<G2Point> for G2Point {
     }
 
     fn is_zero(&self) -> bool {
-        match self {
-            G2Point::AtInfinity => true,
-            _ => false,
-        }
+        matches!(self, G2Point::AtInfinity)
     }
 }
 
@@ -233,8 +230,8 @@ mod tests {
         match g {
             G2Point::AtInfinity => panic!("expected rational point, but got point at infinity"),
             G2Point::Rational { x, y } => {
-                let a = G2Point::new(&x, &y);
-                let b = G2Point::new(&x, &-y);
+                let a = G2Point::new(x, y);
+                let b = G2Point::new(x, &-y);
                 let exp = G2Point::AtInfinity;
                 let act = &a + &b;
                 assert_eq!(act, exp);
@@ -282,14 +279,14 @@ mod tests {
         y0: &'a [u8],
     }
 
-    impl<'a> Into<G2Point> for &Xy<'a> {
-        fn into(self) -> G2Point {
+    impl<'a> From<&Xy<'a>> for G2Point {
+        fn from(val: &Xy<'a>) -> Self {
             let f = P::base_prime_field();
 
-            let x1 = BigUint::parse_bytes(self.x1, 10).unwrap();
-            let x0 = BigUint::parse_bytes(self.x0, 10).unwrap();
-            let y1 = BigUint::parse_bytes(self.y1, 10).unwrap();
-            let y0 = BigUint::parse_bytes(self.y0, 10).unwrap();
+            let x1 = BigUint::parse_bytes(val.x1, 10).unwrap();
+            let x0 = BigUint::parse_bytes(val.x0, 10).unwrap();
+            let y1 = BigUint::parse_bytes(val.y1, 10).unwrap();
+            let y0 = BigUint::parse_bytes(val.y0, 10).unwrap();
 
             G2Point::new(
                 &Fq2::new(

@@ -39,7 +39,7 @@ macro_rules! set_next_id {
 
 impl EquationParser {
     fn num_str_to_field_elem(f: &PrimeField, s: &str) -> PrimeFieldElem {
-        if s.starts_with("-") {
+        if s.starts_with('-') {
             let n = BigInt::parse_bytes(s.as_bytes(), 10).unwrap();
             f.elem_from_signed(&n)
         } else {
@@ -61,7 +61,7 @@ impl EquationParser {
         }
     }
 
-    fn decimal<'a>(f: &'a PrimeField) -> impl Fn(&str) -> IResult<&str, MathExpr> + 'a {
+    fn decimal(f: &PrimeField) -> impl Fn(&str) -> IResult<&str, MathExpr> + '_ {
         |input| {
             let (input, s) = delimited(
                 multispace0,
@@ -107,7 +107,7 @@ impl EquationParser {
             let (input, (lhs, rhs)) =
                 tuple((EquationParser::term2(f, signal_id), many0(rhs)))(input)?;
 
-            if rhs.len() == 0 {
+            if rhs.is_empty() {
                 Ok((input, lhs))
             } else {
                 // translate rhs vector to Mul<Mul<..,Mul>>>..
@@ -151,7 +151,7 @@ impl EquationParser {
             let (input, (lhs, rhs)) =
                 tuple((EquationParser::term1(f, signal_id), many0(rhs)))(input)?;
 
-            if rhs.len() == 0 {
+            if rhs.is_empty() {
                 Ok((input, lhs))
             } else {
                 // translate rhs vector to Add<Add<..,Add>>>..
@@ -281,7 +281,7 @@ mod tests {
     #[test]
     fn test_1_char_variable() {
         let f = &PrimeField::new(&3911u16);
-        for s in vec!["x", "x1", "x0", "xy", "xy1"] {
+        for s in ["x", "x1", "x0", "xy", "xy1"] {
             match EquationParser::parse(f, &format!("{} == 123", s)) {
                 Ok(eq) => {
                     assert_eq!(eq.lhs, MathExpr::Var(s.to_string()));
@@ -295,7 +295,7 @@ mod tests {
     #[test]
     fn test_1_char_variable_with_spaces() {
         let f = &PrimeField::new(&3911u16);
-        for s in vec!["x", "x1", "x0", "xy", "xy1"] {
+        for s in ["x", "x1", "x0", "xy", "xy1"] {
             match EquationParser::parse(f, &format!("  {} == 123  ", s)) {
                 Ok(eq) => {
                     assert_eq!(eq.lhs, MathExpr::Var(s.to_string()));
@@ -328,7 +328,7 @@ mod tests {
     #[test]
     fn test_simple_add_expr_with_1_var() {
         let f = &PrimeField::new(&3911u16);
-        for s in vec!["x", "x1", "x0", "xy", "xy1"] {
+        for s in ["x", "x1", "x0", "xy", "xy1"] {
             match EquationParser::parse(f, &format!("{}+456==123", s)) {
                 Ok(eq) => {
                     assert_eq!(
@@ -349,7 +349,7 @@ mod tests {
     #[test]
     fn test_simple_add_expr_with_2_vars() {
         let f = &PrimeField::new(&3911u16);
-        for (a, b) in vec![("x", "y"), ("x1", "y1"), ("xxx1123", "yyy123443")] {
+        for (a, b) in [("x", "y"), ("x1", "y1"), ("xxx1123", "yyy123443")] {
             match EquationParser::parse(f, &format!("{}+{}==123", a, b)) {
                 Ok(eq) => {
                     assert_eq!(
@@ -408,7 +408,7 @@ mod tests {
     #[test]
     fn test_simple_sub_expr_1_var() {
         let f = &PrimeField::new(&3911u16);
-        for s in vec!["x", "x1", "x0", "xy", "xy1"] {
+        for s in ["x", "x1", "x0", "xy", "xy1"] {
             match EquationParser::parse(f, &format!("123-{}==123", s)) {
                 Ok(eq) => {
                     assert_eq!(
@@ -448,7 +448,7 @@ mod tests {
     #[test]
     fn test_simple_sub_expr_incl_neg1_1_var() {
         let f = &PrimeField::new(&3911u16);
-        for s in vec!["x", "x1", "x0", "xy", "xy1"] {
+        for s in ["x", "x1", "x0", "xy", "xy1"] {
             match EquationParser::parse(f, &format!("-123-{}==123", s)) {
                 Ok(eq) => {
                     assert_eq!(

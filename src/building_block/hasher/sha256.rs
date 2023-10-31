@@ -12,7 +12,7 @@ impl HashValue<u32> {
         let mut x = [0u8; DIGEST_SIZE];
         for i in 0..8 {
             let bytes = self.h[i].to_be_bytes();
-            x[i * 4 + 0] = bytes[0];
+            x[i * 4] = bytes[0];
             x[i * 4 + 1] = bytes[1];
             x[i * 4 + 2] = bytes[2];
             x[i * 4 + 3] = bytes[3];

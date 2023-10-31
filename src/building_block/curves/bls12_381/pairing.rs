@@ -49,6 +49,12 @@ macro_rules! impl_miller_algorithm {
 impl_miller_algorithm!(G1Point, G2Point, calc_g1_g2, new_g1, eval_with_g2);
 impl_miller_algorithm!(G2Point, G1Point, calc_g2_g1, new_g2, eval_with_g1);
 
+impl Default for Pairing {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Pairing {
     pub fn new() -> Self {
         // TODO find out the reason for subtracting 1
@@ -59,7 +65,7 @@ impl Pairing {
         while !l.is_zero() {
             let b = &l & &one;
             l_bits.push(!b.is_zero());
-            l = l >> 1u32;
+            l >>= 1u32;
         }
         l_bits.reverse();
         l_bits.remove(0); // drop msb 1
@@ -81,7 +87,7 @@ impl Pairing {
         println!("Started Tate pairing");
         println!("Running Miller loop G1-G2...");
 
-        let intmed = self.calc_g1_g2(&p1, &p2);
+        let intmed = self.calc_g1_g2(p1, p2);
 
         // apply final exponentiation
         println!("Applying final exponentiation...");
@@ -132,7 +138,7 @@ mod tests {
             let p1 = G1Point::get_random_point();
             let p2 = G2Point::get_random_point();
             let res = test(pairing, pair, &p1, &p2);
-            if res == false {
+            if !res {
                 errors += 1;
             }
         }
@@ -151,7 +157,7 @@ mod tests {
         };
 
         let rhs = {
-            let a = &pair(pairing, &p, one);
+            let a = &pair(pairing, p, one);
             a * a
         };
         assert!(lhs == rhs);

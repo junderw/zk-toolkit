@@ -44,7 +44,7 @@ mod tests {
     fn zero() {
         let x = Number::new(0);
         for i in 0..64 {
-            assert_eq!(x.bits[i], false);
+            assert!(!x.bits[i]);
         }
     }
 
@@ -60,22 +60,22 @@ mod tests {
     #[test]
     fn pos_5() {
         let x = Number::new(5);
-        assert_eq!(x.bits[0], true);
-        assert_eq!(x.bits[1], false);
-        assert_eq!(x.bits[2], true);
+        assert!(x.bits[0]);
+        assert!(!x.bits[1]);
+        assert!(x.bits[2]);
         for i in 3..64 {
-            assert_eq!(x.bits[i], false);
+            assert!(!x.bits[i]);
         }
     }
 
     #[test]
     fn pos_7() {
         let x = Number::new(7);
-        assert_eq!(x.bits[0], true);
-        assert_eq!(x.bits[1], true);
-        assert_eq!(x.bits[2], true);
+        assert!(x.bits[0]);
+        assert!(x.bits[1]);
+        assert!(x.bits[2]);
         for i in 3..64 {
-            assert_eq!(x.bits[i], false);
+            assert!(!x.bits[i]);
         }
     }
 
@@ -83,29 +83,29 @@ mod tests {
     fn neg_1() {
         let x = Number::new(-1);
         for i in 0..64 {
-            assert_eq!(x.bits[i], true);
+            assert!(x.bits[i]);
         }
     }
 
     #[test]
     fn neg_5() {
         let x = Number::new(-5);
-        assert_eq!(x.bits[0], true);
-        assert_eq!(x.bits[1], true);
-        assert_eq!(x.bits[2], false);
+        assert!(x.bits[0]);
+        assert!(x.bits[1]);
+        assert!(!x.bits[2]);
         for i in 3..64 {
-            assert_eq!(x.bits[i], true);
+            assert!(x.bits[i]);
         }
     }
 
     #[test]
     fn neg_7() {
         let x = Number::new(-7);
-        assert_eq!(x.bits[0], true);
-        assert_eq!(x.bits[1], false);
-        assert_eq!(x.bits[2], false);
+        assert!(x.bits[0]);
+        assert!(!x.bits[1]);
+        assert!(!x.bits[2]);
         for i in 3..64 {
-            assert_eq!(x.bits[i], true);
+            assert!(x.bits[i]);
         }
     }
 }

@@ -8,6 +8,12 @@ pub struct PrivateKey {
     pub value: BigUint,
 }
 
+impl Default for PrivateKey {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PrivateKey {
     pub fn new() -> Self {
         let mut rng = ChaCha12Rng::from_entropy();

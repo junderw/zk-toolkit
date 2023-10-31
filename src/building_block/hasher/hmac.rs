@@ -23,7 +23,7 @@ impl<const N: usize> Hmac<N> {
             let key_digest = self.hasher.get_digest(key);
             k[0..key_digest.len()].copy_from_slice(&key_digest[..]);
         } else {
-            k[0..key.len()].copy_from_slice(&key[..]);
+            k[0..key.len()].copy_from_slice(key);
         }
 
         let mut r = vec![0u8; block_size + text.len()];
@@ -35,13 +35,12 @@ impl<const N: usize> Hmac<N> {
         }
 
         // digest = H(k XOR opad || H(k XOR ipad || text))
-        r[block_size..].copy_from_slice(&text[..]);
+        r[block_size..].copy_from_slice(text);
         let inner_digest = self.hasher.get_digest(&r);
 
         s[block_size..].copy_from_slice(&inner_digest);
-        let digest = self.hasher.get_digest(&s);
 
-        digest
+        self.hasher.get_digest(&s)
     }
 }
 

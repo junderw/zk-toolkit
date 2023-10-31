@@ -32,7 +32,7 @@ impl<'a> Iterator for SparseVecIterator<'a> {
     type Item = PrimeFieldElem;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if &self.sv.size == &self.i {
+        if self.sv.size == self.i {
             None
         } else {
             let elem = self.sv[&self.i].clone();
@@ -162,7 +162,7 @@ impl SparseVec {
         // copy self to new sv
         {
             let mut j = f.elem(&0u8);
-            while &j < &self.size {
+            while j < self.size {
                 sv[&i] = self[&j].clone();
                 j.inc();
                 i.inc();
@@ -171,7 +171,7 @@ impl SparseVec {
         // copy other to new sv
         {
             let mut j = f.elem(&0u8);
-            while &j < &other.size {
+            while j < other.size {
                 sv[&i] = other[&j].clone();
                 j.inc();
                 i.inc();
@@ -214,7 +214,7 @@ impl Index<&PrimeFieldElem> for SparseVec {
     type Output = PrimeFieldElem;
 
     fn index(&self, index: &PrimeFieldElem) -> &Self::Output {
-        &self.get(index)
+        self.get(index)
     }
 }
 
@@ -224,7 +224,7 @@ impl Index<&usize> for SparseVec {
 
     fn index(&self, index: &usize) -> &Self::Output {
         let index = self.size.f.elem(index);
-        &self.get(&index)
+        self.get(&index)
     }
 }
 
@@ -253,7 +253,7 @@ impl From<&Vec<PrimeFieldElem>> for SparseVec {
     fn from(elems: &Vec<PrimeFieldElem>) -> Self {
         let size = &elems.len();
         assert!(
-            elems.len() != 0,
+            !elems.is_empty(),
             "Cannot build vector from empty element list"
         );
         let f = &elems[0].f;
@@ -590,7 +590,7 @@ mod tests {
         assert!(it.next().unwrap() == f.elem(&1u8));
         assert!(it.next().unwrap() == f.elem(&2u8));
         assert!(it.next().unwrap() == f.elem(&3u8));
-        assert!(it.next() == None);
+        assert!(it.next().is_none());
     }
 
     #[test]
