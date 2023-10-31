@@ -1,0 +1,53 @@
+on:
+  push
+
+name: Compile Check and Tests
+
+jobs:
+  check:
+    name: Compile Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Rust
+        uses: './.github/actions/ci-rust-setup'
+        with:
+          cache-name: dev
+      - run: RUSTFLAGS="-Dwarnings" cargo check --all-features
+
+  fmt:
+    name: Formatter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Rust
+        uses: './.github/actions/ci-rust-setup'
+        with:
+          cache-name: dev
+          components: rustfmt
+      - run: cargo fmt --all -- --check
+
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Rust
+        uses: './.github/actions/ci-rust-setup'
+        with:
+          cache-name: test
+      - run: cargo test --lib --all-features
+
+  clippy:
+    name: Linter
+    runs-on: ubuntu-latest
+    needs: [check]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Rust
+        uses: './.github/actions/ci-rust-setup'
+        with:
+          cache-name: dev
+          components: clippy
+      - name: Run Clippy
+        run: cargo clippy -- -D warnings

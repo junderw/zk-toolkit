@@ -1,0 +1,38 @@
+name: CI Rust Setup
+description: 'Sets up the environment for Rust jobs during CI workflow'
+
+inputs:
+  cache-name:
+    description: 'Name of cache artifacts (same name is same cache key) empty to disable cache'
+    required: false
+  targets:
+    description: 'A comma separated list of extra targets you want to install'
+    required: false
+  components:
+    description: 'A comma separated list of extra components you want to install'
+    required: false
+
+runs:
+  using: composite
+  steps:
+    - name: Read rust-toolchain file from repository
+      id: gettoolchain
+      shell: bash
+      run: echo "toolchain=$(cat rust-toolchain)" >> $GITHUB_OUTPUT
+    - name: Install ${{ steps.gettoolchain.outputs.toolchain }} Rust toolchain
+      id: toolchain
+      # Commit date is Sep 19, 2023
+      uses: dtolnay/rust-toolchain@439cf607258077187679211f12aa6f19af4a0af7
+      with:
+        toolchain: ${{ steps.gettoolchain.outputs.toolchain }}
+        targets: ${{ inputs.targets }}
+        components: ${{ inputs.components }}
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      if: inputs.cache-name != ''
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ inputs.cache-name }}-${{ steps.toolchain.outputs.cachekey }}-${{ hashFiles('**/Cargo.lock') }}
