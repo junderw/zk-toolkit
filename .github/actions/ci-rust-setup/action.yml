@@ -18,7 +18,9 @@ runs:
     - name: Read rust-toolchain file from repository
       id: gettoolchain
       shell: bash
-      run: echo "toolchain=$(cat rust-toolchain)" >> $GITHUB_OUTPUT
+      run: |-
+        [ ! -f rust-toolchain ] && echo "***ERROR*** NEED rust-toolchain FILE IN ROOT OF REPOSITORY" >&2; exit 1
+        echo "toolchain=$(cat rust-toolchain)" >> $GITHUB_OUTPUT
     - name: Install ${{ steps.gettoolchain.outputs.toolchain }} Rust toolchain
       id: toolchain
       # Commit date is Sep 19, 2023
